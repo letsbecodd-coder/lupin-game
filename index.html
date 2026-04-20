@@ -5,8 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>월급 루팡 💼</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
   background:#0a0a1a;
@@ -24,11 +26,9 @@ canvas{display:block;image-rendering:pixelated;}
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
-// 캔버스 크기 — 폰에 꽉 차게
 const W = 360, H = 640;
 canvas.width = W; canvas.height = H;
 
-// 실제 화면 크기에 맞춰 CSS 스케일
 function resize() {
 const scaleX = window.innerWidth / W;
 const scaleY = window.innerHeight / H;
@@ -39,20 +39,18 @@ canvas.style.height = H * scale + ‘px’;
 resize();
 window.addEventListener(‘resize’, resize);
 
-// ── 상수 ──
 const STAGES = [
-{ color:’#ff4444’, glow:‘rgba(255,68,68,’, name:‘수습사원’, emoji:‘😰’ },
-{ color:’#ff8844’, glow:‘rgba(255,136,68,’, name:‘주임’,     emoji:‘😅’ },
-{ color:’#ffdd44’, glow:‘rgba(255,221,68,’, name:‘대리’,     emoji:‘😤’ },
-{ color:’#44dd44’, glow:‘rgba(68,221,68,’,  name:‘과장’,     emoji:‘😎’ },
-{ color:’#4488ff’, glow:‘rgba(68,136,255,’, name:‘차장’,     emoji:‘🥶’ },
-{ color:’#8866ee’, glow:‘rgba(136,102,238,’,name:‘부장’,     emoji:‘🤯’ },
-{ color:’#dd44dd’, glow:‘rgba(221,68,221,’, name:‘임원’,     emoji:‘👑’ },
-{ color:‘aurora’,  glow:‘aurora’,            name:‘전설의루팡’,emoji:‘✨’ },
+{ color:’#ff4444’, glow:‘rgba(255,68,68,’,   name:‘수습사원’,   emoji:‘😰’ },
+{ color:’#ff8844’, glow:‘rgba(255,136,68,’,  name:‘주임’,       emoji:‘😅’ },
+{ color:’#ffdd44’, glow:‘rgba(255,221,68,’,  name:‘대리’,       emoji:‘😤’ },
+{ color:’#44dd44’, glow:‘rgba(68,221,68,’,   name:‘과장’,       emoji:‘😎’ },
+{ color:’#4488ff’, glow:‘rgba(68,136,255,’,  name:‘차장’,       emoji:‘🥶’ },
+{ color:’#8866ee’, glow:‘rgba(136,102,238,’, name:‘부장’,       emoji:‘🤯’ },
+{ color:’#dd44dd’, glow:‘rgba(221,68,221,’,  name:‘임원’,       emoji:‘👑’ },
+{ color:‘aurora’,  glow:‘aurora’,             name:‘전설의루팡’, emoji:‘✨’ },
 ];
 
-// ── 게임 상태 ──
-let state = ‘idle’; // idle | playing | dead
+let state = ‘idle’;
 let elapsed = 0, startTime = 0;
 let best = parseFloat(localStorage.getItem(‘lupin_best’)||‘0’);
 let docs = [], particles = [];
@@ -62,13 +60,10 @@ let auroraT = 0;
 let shakeT = 0;
 let animId = null, lastT = 0;
 
-// ── 플레이어 ──
 const P = { x:W/2, y:H/2, r:14, trail:[], dead:false };
 
-// ── 입력 ──
 const keys = {};
-// 터치: 손가락 위치를 그대로 캐릭터로 → 직관적!
-let touch = null; // {x, y}
+let touch = null;
 
 document.addEventListener(‘keydown’, e=>{ keys[e.key]=true; e.preventDefault(); });
 document.addEventListener(‘keyup’,   e=>{ keys[e.key]=false; });
@@ -91,17 +86,13 @@ touch = { x:(t.clientX-r.left)*sx, y:(t.clientY-r.top)*sy };
 
 canvas.addEventListener(‘touchend’, e=>{
 e.preventDefault();
-touch=null;
+touch = null;
 if(state===‘idle’||state===‘dead’) startGame();
 },{passive:false});
 
-// 시작 버튼 (마우스 클릭)
 canvas.addEventListener(‘click’, ()=>{
 if(state===‘idle’||state===‘dead’) startGame();
 });
-
-// ── 유틸 ──
-function lerp(a,b,t){return a+(b-a)*t;}
 
 function auroraColor(t, alpha){
 const h = (t*120)%360;
@@ -117,19 +108,14 @@ if(alpha===1) return s.color;
 return s.glow+alpha+’)’;
 }
 
-// ── 배경 ──
 const stars = Array.from({length:40},()=>({
 x:Math.random()*W, y:Math.random()*H,
 s:Math.random()*2+1, b:Math.random()
 }));
 
-// 픽셀 사무실 바닥 타일
 function drawBg(){
-// 배경
 ctx.fillStyle=’#0a0a1a’;
 ctx.fillRect(0,0,W,H);
-
-// 격자 바닥 (원근감)
 ctx.strokeStyle=‘rgba(255,221,68,0.06)’;
 ctx.lineWidth=1;
 for(let x=0;x<W;x+=32){
@@ -138,39 +124,27 @@ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
 for(let y=0;y<H;y+=32){
 ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
 }
-
-// 별/먼지
 stars.forEach(s=>{
 ctx.fillStyle=`rgba(255,255,255,${0.2+s.b*0.3})`;
 ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.s, s.s);
 });
 }
 
-// ── 서류 뭉치 그리기 ──
 function drawDoc(d){
 ctx.save();
 ctx.translate(d.x, d.y);
 ctx.rotate(d.angle);
-
 const w=20, h=26;
-
-// 그림자
 ctx.fillStyle=‘rgba(0,0,0,0.3)’;
 ctx.fillRect(-w/2+3, -h/2+3, w, h);
-
-// 서류 뭉치 (여러 장 겹친 느낌)
 ctx.fillStyle=’#ddd8cc’;
 ctx.fillRect(-w/2-1, -h/2-1, w, h);
 ctx.fillStyle=’#f0ece0’;
 ctx.fillRect(-w/2, -h/2, w, h);
-
-// 줄 (텍스트 흉내)
 ctx.fillStyle=‘rgba(100,100,80,0.5)’;
 for(let i=0;i<4;i++){
 ctx.fillRect(-w/2+3, -h/2+5+i*5, w-6, 1.5);
 }
-
-// 빨간 도장
 ctx.fillStyle=‘rgba(200,40,40,0.8)’;
 ctx.font = ‘bold 9px Jua’;
 ctx.textAlign=‘center’;
@@ -179,14 +153,9 @@ ctx.save();
 ctx.rotate(0.3);
 ctx.fillText(‘결재’, 2, 3);
 ctx.restore();
-
-// 화살촉 (충돌 판정 시각화 — 실제 서류 끝 모서리)
-// 충돌은 중심 기준 원형으로
-
 ctx.restore();
 }
 
-// ── 파티클 ──
 function spawnParticles(x, y, color){
 for(let i=0;i<12;i++){
 const angle = Math.random()*Math.PI*2;
@@ -202,7 +171,7 @@ color
 }
 }
 
-function updateParticles(dt){
+function updateParticles(){
 particles = particles.filter(p=>{
 p.x += p.vx; p.y += p.vy;
 p.vy += 0.1;
@@ -220,9 +189,7 @@ ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
 ctx.globalAlpha = 1;
 }
 
-// ── 플레이어 그리기 ──
 function drawPlayer(){
-// 잔상
 P.trail.forEach((t,i)=>{
 const a = (i/P.trail.length)*0.25;
 ctx.globalAlpha = a;
@@ -233,87 +200,63 @@ ctx.globalAlpha = 1;
 
 const x=Math.floor(P.x), y=Math.floor(P.y);
 const col = getStageColor(stageIdx);
-const glowAlpha = stageIdx >= STAGES.length-1 ? 0.8 : 0.5;
 
-// 글로우
 ctx.save();
-ctx.shadowColor = getStageColor(stageIdx, glowAlpha);
+ctx.shadowColor = getStageColor(stageIdx, 0.5);
 ctx.shadowBlur = stageIdx >= STAGES.length-1 ? 24 : 12;
 
-// 오로라면 무지개 테두리
 if(stageIdx >= STAGES.length-1){
-for(let i=3;i>=1;i=i- 1){
+for(let i=3;i>=1;i–){
 ctx.strokeStyle = auroraColor(auroraT+i*0.1, 0.6);
 ctx.lineWidth = i*3;
 ctx.strokeRect(x-P.r-i*2, y-P.r-i*2, P.r*2+i*4, P.r*2+i*4);
 }
 }
 
-// 몸통 (직장인 픽셀)
-// 정장 몸
 ctx.fillStyle=’#334466’;
 ctx.fillRect(x-10, y-4, 20, 16);
-
-// 넥타이
 ctx.fillStyle = col;
 ctx.fillRect(x-2, y-2, 4, 12);
-
-// 머리
 ctx.fillStyle=’#c8a87a’;
 ctx.fillRect(x-8, y-16, 16, 14);
-
-// 눈
 ctx.fillStyle=’#111’;
 ctx.fillRect(x-5, y-11, 3, 3);
 ctx.fillRect(x+2, y-11, 3, 3);
-
-// 눈 하이라이트
 ctx.fillStyle=‘white’;
 ctx.fillRect(x-4, y-12, 1, 1);
 ctx.fillRect(x+3, y-12, 1, 1);
-
-// 입 (겁먹은 표정)
 ctx.fillStyle=’#333’;
 ctx.fillRect(x-3, y-5, 6, 2);
-
-// 테두리 오라
 ctx.strokeStyle = col;
 ctx.lineWidth = 2;
 ctx.strokeRect(x-P.r, y-P.r, P.r*2, P.r*2);
-
 ctx.restore();
 }
 
-// ── HUD ──
 function drawHUD(){
-// 상단 바
 ctx.fillStyle=‘rgba(0,0,26,0.85)’;
 ctx.fillRect(0,0,W,52);
 ctx.strokeStyle=‘rgba(255,221,68,0.4)’;
 ctx.lineWidth=2;
 ctx.strokeRect(0,0,W,52);
 
-// 시간
 ctx.fillStyle=’#ffdd44’;
 ctx.font=‘bold 28px Jua’;
 ctx.textAlign=‘left’;
 ctx.textBaseline=‘middle’;
 ctx.fillText(elapsed.toFixed(1)+‘초’, 12, 26);
 
-// 최고기록
 ctx.fillStyle=‘rgba(255,221,68,0.5)’;
 ctx.font=‘12px Jua’;
 ctx.textAlign=‘right’;
 ctx.fillText(’최고 ’+best.toFixed(1)+‘초’, W-10, 20);
 
-// 단계명
 const s = STAGES[Math.min(stageIdx, STAGES.length-1)];
 ctx.fillStyle = getStageColor(stageIdx);
 ctx.font=‘13px Jua’;
 ctx.textAlign=‘right’;
 ctx.fillText(s.emoji+’ ’+s.name, W-10, 38);
 
-// 단계 프로그레스 바
 const barW = W - 24;
 const prog = stageIdx >= STAGES.length-1 ? 1 : (elapsed % 10) / 10;
 ctx.fillStyle=‘rgba(255,255,255,0.08)’;
@@ -322,17 +265,13 @@ ctx.fillStyle = getStageColor(stageIdx);
 ctx.fillRect(12, 46, barW*prog, 4);
 }
 
-// ── 시작/오버 화면 ──
 function drawIdle(){
 drawBg();
-
-// 타이틀 박스
 ctx.fillStyle=‘rgba(0,0,26,0.9)’;
 ctx.fillRect(20, H/2-160, W-40, 320);
 ctx.strokeStyle=’#ffdd44’;
 ctx.lineWidth=3;
 ctx.strokeRect(20, H/2-160, W-40, 320);
-// 픽셀 코너 장식
 [[20,H/2-160],[W-20,H/2-160],[20,H/2+160],[W-20,H/2+160]].forEach(([cx,cy])=>{
 ctx.fillStyle=’#ffdd44’;
 ctx.fillRect(cx-4,cy-4,8,8);
@@ -340,7 +279,6 @@ ctx.fillRect(cx-4,cy-4,8,8);
 
 ctx.textAlign=‘center’;
 ctx.textBaseline=‘middle’;
-
 ctx.fillStyle=’#ffdd44’;
 ctx.font=‘bold 38px Jua’;
 ctx.fillText(‘월급 루팡’, W/2, H/2-100);
@@ -349,11 +287,9 @@ ctx.fillStyle=‘rgba(255,221,68,0.6)’;
 ctx.font=‘13px Jua’;
 ctx.fillText(‘서류를 피해 살아남아라!’, W/2, H/2-60);
 
-// 픽셀 캐릭터 미리보기 (크게)
 ctx.save();
 ctx.translate(W/2, H/2+10);
 ctx.scale(2, 2);
-// 몸
 ctx.fillStyle=’#334466’; ctx.fillRect(-10,-4,20,16);
 ctx.fillStyle=’#ff4444’; ctx.fillRect(-2,-2,4,12);
 ctx.fillStyle=’#c8a87a’; ctx.fillRect(-8,-16,16,14);
@@ -364,7 +300,6 @@ ctx.strokeStyle=’#ff4444’; ctx.lineWidth=1.5;
 ctx.strokeRect(-14,-18,28,36);
 ctx.restore();
 
-// 변신 단계 미리보기
 ctx.font=‘11px Jua’;
 const stageColors=[’#ff4444’,’#ff8844’,’#ffdd44’,’#44dd44’,’#4488ff’,’#8866ee’,’#dd44dd’];
 stageColors.forEach((c,i)=>{
@@ -374,10 +309,9 @@ ctx.fillRect(W/2 - stageColors.length*14 + i*28, H/2+65, 20, 8);
 ctx.fillStyle=‘white’;
 ctx.fillText(‘→ 10초마다 변신!’, W/2, H/2+85);
 
+if(Math.floor(Date.now()/500)%2===0){
 ctx.fillStyle=‘white’;
 ctx.font=‘bold 16px Jua’;
-// 깜빡이는 시작 텍스트
-if(Math.floor(Date.now()/500)%2===0){
 ctx.fillText(’[ 화면을 터치하세요 ]’, W/2, H/2+120);
 }
 
@@ -387,10 +321,8 @@ ctx.fillText(‘키보드 방향키 또는 화면 터치’, W/2, H/2+145);
 }
 
 function drawDead(){
-// 반투명 오버레이
 ctx.fillStyle=‘rgba(10,10,26,0.88)’;
 ctx.fillRect(0,0,W,H);
-
 ctx.fillStyle=‘rgba(0,0,26,0.95)’;
 ctx.fillRect(20, H/2-150, W-40, 300);
 ctx.strokeStyle=’#ff4444’;
@@ -399,7 +331,6 @@ ctx.strokeRect(20, H/2-150, W-40, 300);
 
 ctx.textAlign=‘center’;
 ctx.textBaseline=‘middle’;
-
 ctx.fillStyle=’#ff4444’;
 ctx.font=‘bold 32px Jua’;
 ctx.fillText(‘💀 해고당했다!’, W/2, H/2-100);
@@ -408,28 +339,26 @@ ctx.fillStyle=‘rgba(255,255,255,0.6)’;
 ctx.font=‘13px Jua’;
 ctx.fillText(‘결재 서류에 맞고 쓰러짐’, W/2, H/2-68);
 
-// 결과
 ctx.fillStyle=’#ffdd44’;
 ctx.font=‘bold 48px Jua’;
 ctx.fillText(elapsed.toFixed(1)+‘초’, W/2, H/2-10);
 
-ctx.fillStyle=‘rgba(255,221,68,0.6)’;
-ctx.font=‘14px Jua’;
 const isNew = elapsed >= best;
 if(isNew && elapsed > 0.5){
 ctx.fillStyle=’#44ff88’;
+ctx.font=‘14px Jua’;
 ctx.fillText(‘🎉 신기록!’, W/2, H/2+40);
 } else {
+ctx.fillStyle=‘rgba(255,221,68,0.6)’;
+ctx.font=‘14px Jua’;
 ctx.fillText(’최고기록: ’+best.toFixed(1)+‘초’, W/2, H/2+40);
 }
 
-// 달성한 직급
 const s = STAGES[Math.min(stageIdx, STAGES.length-1)];
 ctx.fillStyle = getStageColor(stageIdx);
 ctx.font=‘16px Jua’;
 ctx.fillText(s.emoji+’ ‘+s.name+’ 달성’, W/2, H/2+75);
 
-// 다시 시작
 if(Math.floor(Date.now()/600)%2===0){
 ctx.fillStyle=‘white’;
 ctx.font=‘bold 16px Jua’;
@@ -437,7 +366,6 @@ ctx.fillText(’[ 화면을 터치하세요 ]’, W/2, H/2+120);
 }
 }
 
-// ── 서류 스폰 ──
 function spawnDoc(){
 const side = Math.floor(Math.random()*4);
 let sx, sy;
@@ -446,7 +374,6 @@ else if(side===1){ sx=W+30; sy=Math.random()*H; }
 else if(side===2){ sx=Math.random()*W; sy=H+30; }
 else { sx=-30; sy=Math.random()*H; }
 
-// 플레이어 조준 (약간 랜덤)
 const tx = P.x + (Math.random()-0.5)*80;
 const ty = P.y + (Math.random()-0.5)*80;
 const a = Math.atan2(ty-sy, tx-sx);
@@ -462,25 +389,21 @@ r:14
 });
 }
 
-// ── 충돌 ──
 function checkHit(d){
 return Math.hypot(d.x-P.x, d.y-P.y) < P.r + d.r - 4;
 }
 
-// ── 게임 시작 ──
 function startGame(){
 if(state===‘playing’) return;
 state=‘playing’;
 docs=[]; particles=[];
 P.x=W/2; P.y=H/2; P.trail=[]; P.dead=false;
 elapsed=0; stageIdx=0; shakeT=0;
-startTime=0; // rAF 첫 프레임에서 세팅
-lastSpawn=0;
+startTime=0; lastSpawn=0; lastT=0; // ← 핵심 수정: lastT 초기화
 if(animId) cancelAnimationFrame(animId);
 animId=requestAnimationFrame(loop);
 }
 
-// ── 사망 ──
 function die(){
 state=‘dead’;
 if(elapsed>best){ best=elapsed; localStorage.setItem(‘lupin_best’,best.toFixed(1)); }
@@ -489,7 +412,6 @@ spawnParticles(P.x, P.y, ‘#ffdd44’);
 shakeT=20;
 }
 
-// ── 플레이어 이동 ──
 function updatePlayer(dt){
 const spd = 200;
 let dx=0, dy=0;
@@ -499,7 +421,6 @@ if(keys[‘ArrowRight’]||keys[‘d’]) dx+=1;
 if(keys[‘ArrowUp’]||keys[‘w’]) dy-=1;
 if(keys[‘ArrowDown’]||keys[‘s’]) dy+=1;
 
-// 터치: 손가락보다 80px 위에 캐릭터 위치 (손가락에 가려지지 않게)
 if(touch){
 const targetX = touch.x;
 const targetY = touch.y - 80;
@@ -525,48 +446,52 @@ P.trail.push({x:P.x, y:P.y});
 if(P.trail.length>7) P.trail.shift();
 }
 
-// ── 메인 루프 ──
 function loop(ts){
-// 첫 프레임에서 타이머 기준점 세팅
-if(state===‘playing’ && startTime===0){
-startTime=ts; lastSpawn=ts; lastT=ts;
-}
-const dt = Math.min((ts-lastT)/1000, 0.05);
-lastT=ts;
 auroraT = ts/1000;
 
-if(state!==‘playing’){
+// ── idle / dead 상태 ──
+if(state !== ‘playing’){
 if(state===‘idle’) drawIdle();
 else {
-// dead 화면도 배경+파티클 계속
 drawBg();
 docs.forEach(drawDoc);
 drawParticles();
-updateParticles(dt);
+updateParticles();
 drawDead();
 }
-animId=requestAnimationFrame(loop);
+animId = requestAnimationFrame(loop);
 return;
 }
 
-elapsed=(ts-startTime)/1000;
-stageIdx = Math.min(Math.floor(elapsed/10), STAGES.length-1);
+// ── 첫 프레임 초기화 ── (핵심 수정)
+if(startTime === 0){
+startTime = ts;
+lastSpawn = ts;
+lastT = ts;
+animId = requestAnimationFrame(loop);
+return; // 첫 프레임은 dt=0이므로 바로 다음 프레임으로
+}
 
-// 스폰 간격 (시간 지날수록 빨라짐)
+// ── dt 계산 ── (핵심 수정: lastT===0 방어)
+const dt = lastT === 0 ? 0 : Math.min((ts - lastT) / 1000, 0.05);
+lastT = ts;
+
+elapsed = (ts - startTime) / 1000;
+stageIdx = Math.min(Math.floor(elapsed / 10), STAGES.length - 1);
+
 const interval = Math.max(220, 700 - elapsed*18);
-if(ts-lastSpawn > interval){
+if(ts - lastSpawn > interval){
 spawnDoc();
 if(elapsed>15 && Math.random()<0.35) spawnDoc();
-if(elapsed>30 && Math.random()<0.4) spawnDoc();
-if(elapsed>50 && Math.random()<0.3) spawnDoc();
-lastSpawn=ts;
+if(elapsed>30 && Math.random()<0.4)  spawnDoc();
+if(elapsed>50 && Math.random()<0.3)  spawnDoc();
+lastSpawn = ts;
 }
 
 updatePlayer(dt);
-updateParticles(dt);
+updateParticles();
 
-// 서류 이동 + 충돌
-let hit=false;
+let hit = false;
 docs = docs.filter(d=>{
 d.x+=d.vx; d.y+=d.vy; d.angle+=d.spin;
 if(checkHit(d)){
@@ -576,10 +501,8 @@ hit=true; return false;
 return d.x>-50&&d.x<W+50&&d.y>-50&&d.y<H+50;
 });
 
-// 화면 흔들기
-if(shakeT>0){ shakeT=shakeT-1; }
+if(shakeT>0) shakeT–;
 
-// ── 그리기 ──
 ctx.save();
 if(shakeT>0){
 ctx.translate((Math.random()-0.5)*6, (Math.random()-0.5)*6);
@@ -593,19 +516,21 @@ drawHUD();
 
 ctx.restore();
 
-// 10초 단계 전환 알림
-if(elapsed>0 && elapsed%10 < dt*1.5 && stageIdx < STAGES.length){
+// 단계 전환 파티클
+if(elapsed > 0 && elapsed % 10 < dt * 1.5 && stageIdx < STAGES.length){
 spawnParticles(P.x, P.y, getStageColor(stageIdx));
 spawnParticles(P.x, P.y, getStageColor(stageIdx));
 }
 
-if(hit){ die(); }
+if(hit) die();
 
-animId=requestAnimationFrame(loop);
+animId = requestAnimationFrame(loop);
 }
 
-// 시작
-animId=requestAnimationFrame(loop);
+// ── 핵심 수정: 폰트 로딩 완료 후 루프 시작 ──
+document.fonts.ready.then(() => {
+animId = requestAnimationFrame(loop);
+});
 </script>
 
 </body>
