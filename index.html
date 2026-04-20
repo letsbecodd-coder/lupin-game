@@ -242,7 +242,7 @@ ctx.shadowBlur = stageIdx >= STAGES.length-1 ? 24 : 12;
 
 // 오로라면 무지개 테두리
 if(stageIdx >= STAGES.length-1){
-for(let i=3;i>=1;i=i-1){
+for(let i=3;i>=1;i=i- 1){
 ctx.strokeStyle = auroraColor(auroraT+i*0.1, 0.6);
 ctx.lineWidth = i*3;
 ctx.strokeRect(x-P.r-i*2, y-P.r-i*2, P.r*2+i*4, P.r*2+i*4);
