@@ -1,24 +1,23 @@
 <!DOCTYPE html>
-
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>월급 루팡 💼</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{
-  background:#0a0a1a;
-  display:flex;justify-content:center;align-items:center;
-  height:100dvh;overflow:hidden;
-  font-family:'Jua',sans-serif;
-  touch-action:none;user-select:none;
-}
-canvas{display:block;image-rendering:pixelated;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>월급 루팡 💼</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{
+            background:#0a0a1a;
+            display:flex;justify-content:center;align-items:center;
+            height:100dvh;overflow:hidden;
+            font-family:'Jua',sans-serif;
+            touch-action:none;user-select:none;
+        }
+        canvas{display:block;image-rendering:pixelated; background: #000;}
+    </style>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -30,29 +29,29 @@ const W = 360, H = 640;
 canvas.width = W; canvas.height = H;
 
 function resize() {
-const scaleX = window.innerWidth / W;
-const scaleY = window.innerHeight / H;
-const scale = Math.min(scaleX, scaleY);
-canvas.style.width = W * scale + ‘px’;
-canvas.style.height = H * scale + ‘px’;
+    const scaleX = window.innerWidth / W;
+    const scaleY = window.innerHeight / H;
+    const scale = Math.min(scaleX, scaleY);
+    canvas.style.width = (W * scale) + 'px';
+    canvas.style.height = (H * scale) + 'px';
 }
 resize();
-window.addEventListener(‘resize’, resize);
+window.addEventListener('resize', resize);
 
 const STAGES = [
-{ color:’#ff4444’, glow:‘rgba(255,68,68,’,   name:‘수습사원’,   emoji:‘😰’ },
-{ color:’#ff8844’, glow:‘rgba(255,136,68,’,  name:‘주임’,       emoji:‘😅’ },
-{ color:’#ffdd44’, glow:‘rgba(255,221,68,’,  name:‘대리’,       emoji:‘😤’ },
-{ color:’#44dd44’, glow:‘rgba(68,221,68,’,   name:‘과장’,       emoji:‘😎’ },
-{ color:’#4488ff’, glow:‘rgba(68,136,255,’,  name:‘차장’,       emoji:‘🥶’ },
-{ color:’#8866ee’, glow:‘rgba(136,102,238,’, name:‘부장’,       emoji:‘🤯’ },
-{ color:’#dd44dd’, glow:‘rgba(221,68,221,’,  name:‘임원’,       emoji:‘👑’ },
-{ color:‘aurora’,  glow:‘aurora’,             name:‘전설의루팡’, emoji:‘✨’ },
+    { color:'#ff4444', glow:'rgba(255,68,68,',   name:'수습사원',   emoji:'😰' },
+    { color:'#ff8844', glow:'rgba(255,136,68,',  name:'주임',       emoji:'😅' },
+    { color:'#ffdd44', glow:'rgba(255,221,68,',  name:'대리',       emoji:'😤' },
+    { color:'#44dd44', glow:'rgba(68,221,68,',   name:'과장',       emoji:'😎' },
+    { color:'#4488ff', glow:'rgba(68,136,255,',  name:'차장',       emoji:'🥶' },
+    { color:'#8866ee', glow:'rgba(136,102,238,', name:'부장',       emoji:'🤯' },
+    { color:'#dd44dd', glow:'rgba(221,68,221,',  name:'임원',       emoji:'👑' },
+    { color:'aurora',  glow:'aurora',             name:'전설의루팡', emoji:'✨' },
 ];
 
-let state = ‘idle’;
+let state = 'idle';
 let elapsed = 0, startTime = 0;
-let best = parseFloat(localStorage.getItem(‘lupin_best’)||‘0’);
+let best = parseFloat(localStorage.getItem('lupin_best')||'0');
 let docs = [], particles = [];
 let lastSpawn = 0;
 let stageIdx = 0;
@@ -65,473 +64,383 @@ const P = { x:W/2, y:H/2, r:14, trail:[], dead:false };
 const keys = {};
 let touch = null;
 
-document.addEventListener(‘keydown’, e=>{ keys[e.key]=true; e.preventDefault(); });
-document.addEventListener(‘keyup’,   e=>{ keys[e.key]=false; });
+document.addEventListener('keydown', e=>{ keys[e.key]=true; });
+document.addEventListener('keyup',   e=>{ keys[e.key]=false; });
 
-canvas.addEventListener(‘touchstart’, e=>{
-e.preventDefault();
-const t = e.touches[0];
-const r = canvas.getBoundingClientRect();
-const sx = W / r.width, sy = H / r.height;
-touch = { x:(t.clientX-r.left)*sx, y:(t.clientY-r.top)*sy };
+canvas.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    const sx = W / r.width, sy = H / r.height;
+    touch = { x:(t.clientX-r.left)*sx, y:(t.clientY-r.top)*sy };
+    if(state==='idle'||state==='dead') startGame();
 },{passive:false});
 
-canvas.addEventListener(‘touchmove’, e=>{
-e.preventDefault();
-const t = e.touches[0];
-const r = canvas.getBoundingClientRect();
-const sx = W / r.width, sy = H / r.height;
-touch = { x:(t.clientX-r.left)*sx, y:(t.clientY-r.top)*sy };
+canvas.addEventListener('touchmove', e=>{
+    e.preventDefault();
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    const sx = W / r.width, sy = H / r.height;
+    touch = { x:(t.clientX-r.left)*sx, y:(t.clientY-r.top)*sy };
 },{passive:false});
 
-canvas.addEventListener(‘touchend’, e=>{
-e.preventDefault();
-touch = null;
-if(state===‘idle’||state===‘dead’) startGame();
+canvas.addEventListener('touchend', e=>{
+    e.preventDefault();
+    touch = null;
 },{passive:false});
 
-canvas.addEventListener(‘click’, ()=>{
-if(state===‘idle’||state===‘dead’) startGame();
+canvas.addEventListener('mousedown', ()=>{
+    if(state==='idle'||state==='dead') startGame();
 });
 
 function auroraColor(t, alpha){
-const h = (t*120)%360;
-return `hsla(${h},100%,65%,${alpha})`;
+    const h = (t*120)%360;
+    return `hsla(${h},100%,65%,${alpha})`;
 }
 
 function getStageColor(idx, alpha=1){
-if(idx<0) idx=0;
-if(idx>=STAGES.length) idx=STAGES.length-1;
-const s = STAGES[idx];
-if(s.color===‘aurora’) return auroraColor(auroraT, alpha);
-if(alpha===1) return s.color;
-return s.glow+alpha+’)’;
+    if(idx<0) idx=0;
+    if(idx>=STAGES.length) idx=STAGES.length-1;
+    const s = STAGES[idx];
+    if(s.color==='aurora') return auroraColor(auroraT, alpha);
+    if(alpha===1) return s.color;
+    return s.glow+alpha+')';
 }
 
 const stars = Array.from({length:40},()=>({
-x:Math.random()*W, y:Math.random()*H,
-s:Math.random()*2+1, b:Math.random()
+    x:Math.random()*W, y:Math.random()*H,
+    s:Math.random()*2+1, b:Math.random()
 }));
 
 function drawBg(){
-ctx.fillStyle=’#0a0a1a’;
-ctx.fillRect(0,0,W,H);
-ctx.strokeStyle=‘rgba(255,221,68,0.06)’;
-ctx.lineWidth=1;
-for(let x=0;x<W;x+=32){
-ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
-}
-for(let y=0;y<H;y+=32){
-ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
-}
-stars.forEach(s=>{
-ctx.fillStyle=`rgba(255,255,255,${0.2+s.b*0.3})`;
-ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.s, s.s);
-});
+    ctx.fillStyle='#0a0a1a';
+    ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,221,68,0.06)';
+    ctx.lineWidth=1;
+    for(let x=0;x<W;x+=32){
+        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+    }
+    for(let y=0;y<H;y+=32){
+        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    }
+    stars.forEach(s=>{
+        ctx.fillStyle=`rgba(255,255,255,${0.2+s.b*0.3})`;
+        ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.s, s.s);
+    });
 }
 
 function drawDoc(d){
-ctx.save();
-ctx.translate(d.x, d.y);
-ctx.rotate(d.angle);
-const w=20, h=26;
-ctx.fillStyle=‘rgba(0,0,0,0.3)’;
-ctx.fillRect(-w/2+3, -h/2+3, w, h);
-ctx.fillStyle=’#ddd8cc’;
-ctx.fillRect(-w/2-1, -h/2-1, w, h);
-ctx.fillStyle=’#f0ece0’;
-ctx.fillRect(-w/2, -h/2, w, h);
-ctx.fillStyle=‘rgba(100,100,80,0.5)’;
-for(let i=0;i<4;i++){
-ctx.fillRect(-w/2+3, -h/2+5+i*5, w-6, 1.5);
-}
-ctx.fillStyle=‘rgba(200,40,40,0.8)’;
-ctx.font = ‘bold 9px Jua’;
-ctx.textAlign=‘center’;
-ctx.textBaseline=‘middle’;
-ctx.save();
-ctx.rotate(0.3);
-ctx.fillText(‘결재’, 2, 3);
-ctx.restore();
-ctx.restore();
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(d.angle);
+    const w=20, h=26;
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.fillRect(-w/2+3, -h/2+3, w, h);
+    ctx.fillStyle='#ddd8cc';
+    ctx.fillRect(-w/2-1, -h/2-1, w, h);
+    ctx.fillStyle='#f0ece0';
+    ctx.fillRect(-w/2, -h/2, w, h);
+    ctx.fillStyle='rgba(100,100,80,0.5)';
+    for(let i=0;i<4;i++){
+        ctx.fillRect(-w/2+3, -h/2+5+i*5, w-6, 1.5);
+    }
+    ctx.fillStyle='rgba(200,40,40,0.8)';
+    ctx.font = 'bold 9px Jua';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.save();
+    ctx.rotate(0.3);
+    ctx.fillText('결재', 2, 3);
+    ctx.restore();
+    ctx.restore();
 }
 
 function spawnParticles(x, y, color){
-for(let i=0;i<12;i++){
-const angle = Math.random()*Math.PI*2;
-const speed = Math.random()*3+1;
-particles.push({
-x, y,
-vx: Math.cos(angle)*speed,
-vy: Math.sin(angle)*speed,
-life: 1, decay: 0.05+Math.random()*0.04,
-size: Math.random()*4+2,
-color
-});
-}
+    for(let i=0;i<12;i++){
+        const angle = Math.random()*Math.PI*2;
+        const speed = Math.random()*3+1;
+        particles.push({
+            x, y,
+            vx: Math.cos(angle)*speed,
+            vy: Math.sin(angle)*speed,
+            life: 1, decay: 0.05+Math.random()*0.04,
+            size: Math.random()*4+2,
+            color
+        });
+    }
 }
 
 function updateParticles(){
-particles = particles.filter(p=>{
-p.x += p.vx; p.y += p.vy;
-p.vy += 0.1;
-p.life -= p.decay;
-return p.life > 0;
-});
+    particles = particles.filter(p=>{
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.1;
+        p.life -= p.decay;
+        return p.life > 0;
+    });
 }
 
 function drawParticles(){
-particles.forEach(p=>{
-ctx.globalAlpha = p.life;
-ctx.fillStyle = p.color;
-ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
-});
-ctx.globalAlpha = 1;
+    particles.forEach(p=>{
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
+    });
+    ctx.globalAlpha = 1;
 }
 
 function drawPlayer(){
-P.trail.forEach((t,i)=>{
-const a = (i/P.trail.length)*0.25;
-ctx.globalAlpha = a;
-ctx.fillStyle = getStageColor(stageIdx);
-ctx.fillRect(Math.floor(t.x-6), Math.floor(t.y-6), 12, 12);
-});
-ctx.globalAlpha = 1;
+    P.trail.forEach((t,i)=>{
+        const a = (i/P.trail.length)*0.25;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = getStageColor(stageIdx);
+        ctx.fillRect(Math.floor(t.x-6), Math.floor(t.y-6), 12, 12);
+    });
+    ctx.globalAlpha = 1;
 
-const x=Math.floor(P.x), y=Math.floor(P.y);
-const col = getStageColor(stageIdx);
+    const x=Math.floor(P.x), y=Math.floor(P.y);
+    const col = getStageColor(stageIdx);
 
-ctx.save();
-ctx.shadowColor = getStageColor(stageIdx, 0.5);
-ctx.shadowBlur = stageIdx >= STAGES.length-1 ? 24 : 12;
+    ctx.save();
+    ctx.shadowColor = getStageColor(stageIdx, 0.5);
+    ctx.shadowBlur = stageIdx >= STAGES.length-1 ? 24 : 12;
 
-if(stageIdx >= STAGES.length-1){
-for(let i=3;i>=1;i–){
-ctx.strokeStyle = auroraColor(auroraT+i*0.1, 0.6);
-ctx.lineWidth = i*3;
-ctx.strokeRect(x-P.r-i*2, y-P.r-i*2, P.r*2+i*4, P.r*2+i*4);
-}
-}
+    if(stageIdx >= STAGES.length-1){
+        for(let i=3;i>=1;i--){
+            ctx.strokeStyle = auroraColor(auroraT+i*0.1, 0.6);
+            ctx.lineWidth = i*3;
+            ctx.strokeRect(x-P.r-i*2, y-P.r-i*2, P.r*2+i*4, P.r*2+i*4);
+        }
+    }
 
-ctx.fillStyle=’#334466’;
-ctx.fillRect(x-10, y-4, 20, 16);
-ctx.fillStyle = col;
-ctx.fillRect(x-2, y-2, 4, 12);
-ctx.fillStyle=’#c8a87a’;
-ctx.fillRect(x-8, y-16, 16, 14);
-ctx.fillStyle=’#111’;
-ctx.fillRect(x-5, y-11, 3, 3);
-ctx.fillRect(x+2, y-11, 3, 3);
-ctx.fillStyle=‘white’;
-ctx.fillRect(x-4, y-12, 1, 1);
-ctx.fillRect(x+3, y-12, 1, 1);
-ctx.fillStyle=’#333’;
-ctx.fillRect(x-3, y-5, 6, 2);
-ctx.strokeStyle = col;
-ctx.lineWidth = 2;
-ctx.strokeRect(x-P.r, y-P.r, P.r*2, P.r*2);
-ctx.restore();
+    ctx.fillStyle='#334466';
+    ctx.fillRect(x-10, y-4, 20, 16);
+    ctx.fillStyle = col;
+    ctx.fillRect(x-2, y-2, 4, 12);
+    ctx.fillStyle='#c8a87a';
+    ctx.fillRect(x-8, y-16, 16, 14);
+    ctx.fillStyle='#111';
+    ctx.fillRect(x-5, y-11, 3, 3);
+    ctx.fillRect(x+2, y-11, 3, 3);
+    ctx.fillStyle='white';
+    ctx.fillRect(x-4, y-12, 1, 1);
+    ctx.fillRect(x+3, y-12, 1, 1);
+    ctx.fillStyle='#333';
+    ctx.fillRect(x-3, y-5, 6, 2);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x-P.r, y-P.r, P.r*2, P.r*2);
+    ctx.restore();
 }
 
 function drawHUD(){
-ctx.fillStyle=‘rgba(0,0,26,0.85)’;
-ctx.fillRect(0,0,W,52);
-ctx.strokeStyle=‘rgba(255,221,68,0.4)’;
-ctx.lineWidth=2;
-ctx.strokeRect(0,0,W,52);
+    ctx.fillStyle='rgba(0,0,26,0.85)';
+    ctx.fillRect(0,0,W,52);
+    ctx.strokeStyle='rgba(255,221,68,0.4)';
+    ctx.lineWidth=2;
+    ctx.strokeRect(0,0,W,52);
 
-ctx.fillStyle=’#ffdd44’;
-ctx.font=‘bold 28px Jua’;
-ctx.textAlign=‘left’;
-ctx.textBaseline=‘middle’;
-ctx.fillText(elapsed.toFixed(1)+‘초’, 12, 26);
+    ctx.fillStyle='#ffdd44';
+    ctx.font='bold 28px Jua';
+    ctx.textAlign='left';
+    ctx.textBaseline='middle';
+    ctx.fillText(elapsed.toFixed(1)+'초', 12, 26);
 
-ctx.fillStyle=‘rgba(255,221,68,0.5)’;
-ctx.font=‘12px Jua’;
-ctx.textAlign=‘right’;
-ctx.fillText(’최고 ’+best.toFixed(1)+‘초’, W-10, 20);
+    ctx.fillStyle='rgba(255,221,68,0.5)';
+    ctx.font='12px Jua';
+    ctx.textAlign='right';
+    ctx.fillText('최고 '+best.toFixed(1)+'초', W-10, 20);
 
-const s = STAGES[Math.min(stageIdx, STAGES.length-1)];
-ctx.fillStyle = getStageColor(stageIdx);
-ctx.font=‘13px Jua’;
-ctx.textAlign=‘right’;
-ctx.fillText(s.emoji+’ ’+s.name, W-10, 38);
+    const s = STAGES[Math.min(stageIdx, STAGES.length-1)];
+    ctx.fillStyle = getStageColor(stageIdx);
+    ctx.font='13px Jua';
+    ctx.textAlign='right';
+    ctx.fillText(s.emoji+' '+s.name, W-10, 38);
 
-const barW = W - 24;
-const prog = stageIdx >= STAGES.length-1 ? 1 : (elapsed % 10) / 10;
-ctx.fillStyle=‘rgba(255,255,255,0.08)’;
-ctx.fillRect(12, 46, barW, 4);
-ctx.fillStyle = getStageColor(stageIdx);
-ctx.fillRect(12, 46, barW*prog, 4);
+    const barW = W - 24;
+    const prog = stageIdx >= STAGES.length-1 ? 1 : (elapsed % 10) / 10;
+    ctx.fillStyle='rgba(255,255,255,0.08)';
+    ctx.fillRect(12, 46, barW, 4);
+    ctx.fillStyle = getStageColor(stageIdx);
+    ctx.fillRect(12, 46, barW*prog, 4);
 }
 
 function drawIdle(){
-drawBg();
-ctx.fillStyle=‘rgba(0,0,26,0.9)’;
-ctx.fillRect(20, H/2-160, W-40, 320);
-ctx.strokeStyle=’#ffdd44’;
-ctx.lineWidth=3;
-ctx.strokeRect(20, H/2-160, W-40, 320);
-[[20,H/2-160],[W-20,H/2-160],[20,H/2+160],[W-20,H/2+160]].forEach(([cx,cy])=>{
-ctx.fillStyle=’#ffdd44’;
-ctx.fillRect(cx-4,cy-4,8,8);
-});
+    drawBg();
+    ctx.fillStyle='rgba(0,0,26,0.9)';
+    ctx.fillRect(20, H/2-160, W-40, 320);
+    ctx.strokeStyle='#ffdd44';
+    ctx.lineWidth=3;
+    ctx.strokeRect(20, H/2-160, W-40, 320);
 
-ctx.textAlign=‘center’;
-ctx.textBaseline=‘middle’;
-ctx.fillStyle=’#ffdd44’;
-ctx.font=‘bold 38px Jua’;
-ctx.fillText(‘월급 루팡’, W/2, H/2-100);
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillStyle='#ffdd44';
+    ctx.font='bold 38px Jua';
+    ctx.fillText('월급 루팡', W/2, H/2-100);
 
-ctx.fillStyle=‘rgba(255,221,68,0.6)’;
-ctx.font=‘13px Jua’;
-ctx.fillText(‘서류를 피해 살아남아라!’, W/2, H/2-60);
+    ctx.fillStyle='rgba(255,221,68,0.6)';
+    ctx.font='13px Jua';
+    ctx.fillText('서류를 피해 살아남아라!', W/2, H/2-60);
 
-ctx.save();
-ctx.translate(W/2, H/2+10);
-ctx.scale(2, 2);
-ctx.fillStyle=’#334466’; ctx.fillRect(-10,-4,20,16);
-ctx.fillStyle=’#ff4444’; ctx.fillRect(-2,-2,4,12);
-ctx.fillStyle=’#c8a87a’; ctx.fillRect(-8,-16,16,14);
-ctx.fillStyle=’#111’; ctx.fillRect(-5,-11,3,3); ctx.fillRect(2,-11,3,3);
-ctx.fillStyle=‘white’; ctx.fillRect(-4,-12,1,1); ctx.fillRect(3,-12,1,1);
-ctx.fillStyle=’#333’; ctx.fillRect(-3,-5,6,2);
-ctx.strokeStyle=’#ff4444’; ctx.lineWidth=1.5;
-ctx.strokeRect(-14,-18,28,36);
-ctx.restore();
-
-ctx.font=‘11px Jua’;
-const stageColors=[’#ff4444’,’#ff8844’,’#ffdd44’,’#44dd44’,’#4488ff’,’#8866ee’,’#dd44dd’];
-stageColors.forEach((c,i)=>{
-ctx.fillStyle=c;
-ctx.fillRect(W/2 - stageColors.length*14 + i*28, H/2+65, 20, 8);
-});
-ctx.fillStyle=‘white’;
-ctx.fillText(‘→ 10초마다 변신!’, W/2, H/2+85);
-
-if(Math.floor(Date.now()/500)%2===0){
-ctx.fillStyle=‘white’;
-ctx.font=‘bold 16px Jua’;
-ctx.fillText(’[ 화면을 터치하세요 ]’, W/2, H/2+120);
-}
-
-ctx.fillStyle=‘rgba(255,255,255,0.3)’;
-ctx.font=‘11px Jua’;
-ctx.fillText(‘키보드 방향키 또는 화면 터치’, W/2, H/2+145);
+    if(Math.floor(Date.now()/500)%2===0){
+        ctx.fillStyle='white';
+        ctx.font='bold 16px Jua';
+        ctx.fillText('[ 화면을 터치하세요 ]', W/2, H/2+120);
+    }
 }
 
 function drawDead(){
-ctx.fillStyle=‘rgba(10,10,26,0.88)’;
-ctx.fillRect(0,0,W,H);
-ctx.fillStyle=‘rgba(0,0,26,0.95)’;
-ctx.fillRect(20, H/2-150, W-40, 300);
-ctx.strokeStyle=’#ff4444’;
-ctx.lineWidth=3;
-ctx.strokeRect(20, H/2-150, W-40, 300);
+    ctx.fillStyle='rgba(10,10,26,0.88)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(0,0,26,0.95)';
+    ctx.fillRect(20, H/2-150, W-40, 300);
+    ctx.strokeStyle='#ff4444';
+    ctx.lineWidth=3;
+    ctx.strokeRect(20, H/2-150, W-40, 300);
 
-ctx.textAlign=‘center’;
-ctx.textBaseline=‘middle’;
-ctx.fillStyle=’#ff4444’;
-ctx.font=‘bold 32px Jua’;
-ctx.fillText(‘💀 해고당했다!’, W/2, H/2-100);
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillStyle='#ff4444';
+    ctx.font='bold 32px Jua';
+    ctx.fillText('💀 해고당했다!', W/2, H/2-100);
 
-ctx.fillStyle=‘rgba(255,255,255,0.6)’;
-ctx.font=‘13px Jua’;
-ctx.fillText(‘결재 서류에 맞고 쓰러짐’, W/2, H/2-68);
+    ctx.fillStyle='#ffdd44';
+    ctx.font='bold 48px Jua';
+    ctx.fillText(elapsed.toFixed(1)+'초', W/2, H/2-10);
 
-ctx.fillStyle=’#ffdd44’;
-ctx.font=‘bold 48px Jua’;
-ctx.fillText(elapsed.toFixed(1)+‘초’, W/2, H/2-10);
-
-const isNew = elapsed >= best;
-if(isNew && elapsed > 0.5){
-ctx.fillStyle=’#44ff88’;
-ctx.font=‘14px Jua’;
-ctx.fillText(‘🎉 신기록!’, W/2, H/2+40);
-} else {
-ctx.fillStyle=‘rgba(255,221,68,0.6)’;
-ctx.font=‘14px Jua’;
-ctx.fillText(’최고기록: ’+best.toFixed(1)+‘초’, W/2, H/2+40);
-}
-
-const s = STAGES[Math.min(stageIdx, STAGES.length-1)];
-ctx.fillStyle = getStageColor(stageIdx);
-ctx.font=‘16px Jua’;
-ctx.fillText(s.emoji+’ ‘+s.name+’ 달성’, W/2, H/2+75);
-
-if(Math.floor(Date.now()/600)%2===0){
-ctx.fillStyle=‘white’;
-ctx.font=‘bold 16px Jua’;
-ctx.fillText(’[ 화면을 터치하세요 ]’, W/2, H/2+120);
-}
+    if(Math.floor(Date.now()/600)%2===0){
+        ctx.fillStyle='white';
+        ctx.font='bold 16px Jua';
+        ctx.fillText('[ 다시 시작하기 ]', W/2, H/2+120);
+    }
 }
 
 function spawnDoc(){
-const side = Math.floor(Math.random()*4);
-let sx, sy;
-if(side===0){ sx=Math.random()*W; sy=-30; }
-else if(side===1){ sx=W+30; sy=Math.random()*H; }
-else if(side===2){ sx=Math.random()*W; sy=H+30; }
-else { sx=-30; sy=Math.random()*H; }
+    const side = Math.floor(Math.random()*4);
+    let sx, sy;
+    if(side===0){ sx=Math.random()*W; sy=-30; }
+    else if(side===1){ sx=W+30; sy=Math.random()*H; }
+    else if(side===2){ sx=Math.random()*W; sy=H+30; }
+    else { sx=-30; sy=Math.random()*H; }
 
-const tx = P.x + (Math.random()-0.5)*80;
-const ty = P.y + (Math.random()-0.5)*80;
-const a = Math.atan2(ty-sy, tx-sx);
-const spd = 2.5 + (elapsed/20) + Math.random()*1.5;
+    const tx = P.x + (Math.random()-0.5)*80;
+    const ty = P.y + (Math.random()-0.5)*80;
+    const a = Math.atan2(ty-sy, tx-sx);
+    const spd = 2.5 + (elapsed/20) + Math.random()*1.5;
 
-docs.push({
-x:sx, y:sy,
-vx:Math.cos(a)*spd,
-vy:Math.sin(a)*spd,
-angle:Math.random()*Math.PI*2,
-spin:(Math.random()-0.5)*0.15,
-r:14
-});
+    docs.push({
+        x:sx, y:sy,
+        vx:Math.cos(a)*spd,
+        vy:Math.sin(a)*spd,
+        angle:Math.random()*Math.PI*2,
+        spin:(Math.random()-0.5)*0.15,
+        r:14
+    });
 }
 
 function checkHit(d){
-return Math.hypot(d.x-P.x, d.y-P.y) < P.r + d.r - 4;
+    return Math.hypot(d.x-P.x, d.y-P.y) < P.r + d.r - 4;
 }
 
 function startGame(){
-if(state===‘playing’) return;
-state=‘playing’;
-docs=[]; particles=[];
-P.x=W/2; P.y=H/2; P.trail=[]; P.dead=false;
-elapsed=0; stageIdx=0; shakeT=0;
-startTime=0; lastSpawn=0; lastT=0; // ← 핵심 수정: lastT 초기화
-if(animId) cancelAnimationFrame(animId);
-animId=requestAnimationFrame(loop);
+    state='playing';
+    docs=[]; particles=[];
+    P.x=W/2; P.y=H/2; P.trail=[]; P.dead=false;
+    elapsed=0; stageIdx=0; shakeT=0;
+    startTime=performance.now(); 
+    lastSpawn=performance.now(); 
+    lastT=performance.now();
 }
 
 function die(){
-state=‘dead’;
-if(elapsed>best){ best=elapsed; localStorage.setItem(‘lupin_best’,best.toFixed(1)); }
-spawnParticles(P.x, P.y, ‘#ff4444’);
-spawnParticles(P.x, P.y, ‘#ffdd44’);
-shakeT=20;
+    state='dead';
+    if(elapsed>best){ best=elapsed; localStorage.setItem('lupin_best',best.toFixed(1)); }
+    spawnParticles(P.x, P.y, '#ff4444');
+    shakeT=20;
 }
 
 function updatePlayer(dt){
-const spd = 200;
-let dx=0, dy=0;
+    const spd = 200;
+    let dx=0, dy=0;
 
-if(keys[‘ArrowLeft’]||keys[‘a’]) dx-=1;
-if(keys[‘ArrowRight’]||keys[‘d’]) dx+=1;
-if(keys[‘ArrowUp’]||keys[‘w’]) dy-=1;
-if(keys[‘ArrowDown’]||keys[‘s’]) dy+=1;
+    if(keys['ArrowLeft']||keys['a']) dx-=1;
+    if(keys['ArrowRight']||keys['d']) dx+=1;
+    if(keys['ArrowUp']||keys['w']) dy-=1;
+    if(keys['ArrowDown']||keys['s']) dy+=1;
 
-if(touch){
-const targetX = touch.x;
-const targetY = touch.y - 80;
-const tdx = targetX - P.x;
-const tdy = targetY - P.y;
-const dist = Math.hypot(tdx, tdy);
-if(dist > 4){
-dx = tdx/dist;
-dy = tdy/dist;
-const factor = Math.min(dist/40, 1);
-dx *= factor;
-dy *= factor;
-}
-}
+    if(touch){
+        const targetX = touch.x;
+        const targetY = touch.y - 80;
+        const tdx = targetX - P.x;
+        const tdy = targetY - P.y;
+        const dist = Math.hypot(tdx, tdy);
+        if(dist > 4){
+            dx = tdx/dist;
+            dy = tdy/dist;
+            const factor = Math.min(dist/40, 1);
+            dx *= factor; dy *= factor;
+        }
+    }
 
-const mag=Math.hypot(dx,dy);
-if(mag>1){ dx/=mag; dy/=mag; }
+    const mag = Math.hypot(dx,dy);
+    if(mag>1){ dx/=mag; dy/=mag; }
 
-P.x = Math.max(P.r, Math.min(W-P.r, P.x+dx*spd*dt));
-P.y = Math.max(P.r+52, Math.min(H-P.r, P.y+dy*spd*dt));
+    P.x = Math.max(P.r, Math.min(W-P.r, P.x+dx*spd*dt));
+    P.y = Math.max(P.r+52, Math.min(H-P.r, P.y+dy*spd*dt));
 
-P.trail.push({x:P.x, y:P.y});
-if(P.trail.length>7) P.trail.shift();
+    P.trail.push({x:P.x, y:P.y});
+    if(P.trail.length>7) P.trail.shift();
 }
 
 function loop(ts){
-auroraT = ts/1000;
+    auroraT = ts/1000;
+    const dt = Math.min((ts - lastT) / 1000, 0.05);
+    lastT = ts;
 
-// ── idle / dead 상태 ──
-if(state !== ‘playing’){
-if(state===‘idle’) drawIdle();
-else {
-drawBg();
-docs.forEach(drawDoc);
-drawParticles();
-updateParticles();
-drawDead();
-}
-animId = requestAnimationFrame(loop);
-return;
-}
+    if(state === 'playing'){
+        elapsed = (ts - startTime) / 1000;
+        stageIdx = Math.min(Math.floor(elapsed / 10), STAGES.length - 1);
 
-// ── 첫 프레임 초기화 ── (핵심 수정)
-if(startTime === 0){
-startTime = ts;
-lastSpawn = ts;
-lastT = ts;
-animId = requestAnimationFrame(loop);
-return; // 첫 프레임은 dt=0이므로 바로 다음 프레임으로
-}
+        const interval = Math.max(220, 700 - elapsed*18);
+        if(ts - lastSpawn > interval){
+            spawnDoc();
+            if(elapsed>15 && Math.random()<0.35) spawnDoc();
+            lastSpawn = ts;
+        }
 
-// ── dt 계산 ── (핵심 수정: lastT===0 방어)
-const dt = lastT === 0 ? 0 : Math.min((ts - lastT) / 1000, 0.05);
-lastT = ts;
+        updatePlayer(dt);
+        updateParticles();
 
-elapsed = (ts - startTime) / 1000;
-stageIdx = Math.min(Math.floor(elapsed / 10), STAGES.length - 1);
+        let hit = false;
+        docs = docs.filter(d=>{
+            d.x+=d.vx; d.y+=d.vy; d.angle+=d.spin;
+            if(checkHit(d)){ hit=true; return false; }
+            return d.x>-50&&d.x<W+50&&d.y>-50&&d.y<H+50;
+        });
 
-const interval = Math.max(220, 700 - elapsed*18);
-if(ts - lastSpawn > interval){
-spawnDoc();
-if(elapsed>15 && Math.random()<0.35) spawnDoc();
-if(elapsed>30 && Math.random()<0.4)  spawnDoc();
-if(elapsed>50 && Math.random()<0.3)  spawnDoc();
-lastSpawn = ts;
-}
+        if(hit) die();
 
-updatePlayer(dt);
-updateParticles();
+        drawBg();
+        docs.forEach(drawDoc);
+        drawParticles();
+        drawPlayer();
+        drawHUD();
+    } else if(state === 'idle'){
+        drawIdle();
+    } else {
+        drawBg();
+        docs.forEach(drawDoc);
+        updateParticles();
+        drawParticles();
+        drawDead();
+    }
 
-let hit = false;
-docs = docs.filter(d=>{
-d.x+=d.vx; d.y+=d.vy; d.angle+=d.spin;
-if(checkHit(d)){
-spawnParticles(d.x, d.y, ‘#f0ece0’);
-hit=true; return false;
-}
-return d.x>-50&&d.x<W+50&&d.y>-50&&d.y<H+50;
-});
-
-if(shakeT>0) shakeT–;
-
-ctx.save();
-if(shakeT>0){
-ctx.translate((Math.random()-0.5)*6, (Math.random()-0.5)*6);
+    requestAnimationFrame(loop);
 }
 
-drawBg();
-docs.forEach(drawDoc);
-drawParticles();
-drawPlayer();
-drawHUD();
-
-ctx.restore();
-
-// 단계 전환 파티클
-if(elapsed > 0 && elapsed % 10 < dt * 1.5 && stageIdx < STAGES.length){
-spawnParticles(P.x, P.y, getStageColor(stageIdx));
-spawnParticles(P.x, P.y, getStageColor(stageIdx));
-}
-
-if(hit) die();
-
-animId = requestAnimationFrame(loop);
-}
-
-// ── 핵심 수정: 폰트 로딩 완료 후 루프 시작 ──
 document.fonts.ready.then(() => {
-animId = requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
 });
 </script>
-
 </body>
 </html>
